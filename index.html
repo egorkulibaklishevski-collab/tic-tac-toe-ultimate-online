@@ -1,1 +1,436 @@
 
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#101827">
+    <meta name="description" content="Tic-Tac-Toe Ultimate Online">
+    <title>Tic-Tac-Toe Ultimate Online</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="app.js" defer></script>
+</head>
+<body>
+
+<header class="topbar">
+    <div class="brand">
+        <div class="brand-icon">✦</div>
+        <span>Tic-Tac-Toe <strong>Ultimate</strong></span>
+    </div>
+
+    <div class="topbar-user">
+        <div id="avatar" class="avatar">P</div>
+        <span id="headerUsername">Игрок</span>
+    </div>
+</header>
+
+<main class="main-container">
+
+    <!-- AUTH -->
+    <section id="authView" class="view auth-view">
+        <div class="auth-card">
+            <div class="logo-large">✦</div>
+            <h1>Добро пожаловать!</h1>
+            <p class="muted">Войди в аккаунт или создай новый.</p>
+
+            <div class="auth-tabs">
+                <button id="loginTab" class="tab-button active">Войти</button>
+                <button id="registerTab" class="tab-button">Регистрация</button>
+            </div>
+
+            <div class="form-group">
+                <label id="usernameLabel" for="username" class="hidden">Имя пользователя</label>
+                <input id="username" class="hidden" type="text"
+                       minlength="3" maxlength="25"
+                       placeholder="Например, Player123">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input id="email" type="email"
+                       placeholder="example@email.com">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Пароль</label>
+                <input id="password" type="password"
+                       placeholder="Минимум 6 символов">
+            </div>
+
+            <button id="authSubmit" class="primary-button full-width">Войти</button>
+            <p id="authMessage" class="message-text"></p>
+            <p class="small-muted">Защищённая авторизация через Supabase.</p>
+        </div>
+    </section>
+
+    <!-- MENU -->
+    <section id="menuView" class="view hidden">
+        <div class="welcome-section">
+            <div>
+                <p class="eyebrow">ГЛАВНОЕ МЕНЮ</p>
+                <h1>Привет, <span id="welcomeName">Игрок</span>!</h1>
+                <p class="muted">Выбирай игру и приглашай друзей.</p>
+            </div>
+            <button id="logoutBtn" class="secondary-button">Выйти</button>
+        </div>
+
+        <div class="menu-grid">
+            <button class="menu-card featured" data-view="botView">
+                <span class="menu-icon">🤖</span>
+                <strong>Игра с ботом</strong>
+                <span>Тренируйся против компьютера</span>
+            </button>
+
+            <button class="menu-card" data-view="roomsView">
+                <span class="menu-icon">🌐</span>
+                <strong>Онлайн-комнаты</strong>
+                <span>Играй с другими игроками</span>
+            </button>
+
+            <button class="menu-card" data-view="leaderboardView">
+                <span class="menu-icon">🏆</span>
+                <strong>Таблица лидеров</strong>
+                <span>Смотри рейтинг игроков</span>
+            </button>
+
+            <button class="menu-card" data-view="friendsView">
+                <span class="menu-icon">👥</span>
+                <strong>Друзья</strong>
+                <span>Добавляй друзей и общайся</span>
+            </button>
+
+            <button class="menu-card" data-view="profileView">
+                <span class="menu-icon">👤</span>
+                <strong>Профиль</strong>
+                <span>Твоя статистика</span>
+            </button>
+
+            <button class="menu-card" data-view="settingsView">
+                <span class="menu-icon">⚙️</span>
+                <strong>Настройки</strong>
+                <span>Настрой внешний вид</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- BOT -->
+    <section id="botView" class="view hidden">
+        <button class="back-button" data-view="menuView">← Назад</button>
+        <div class="section-heading">
+            <p class="eyebrow">ТРЕНИРОВКА</p>
+            <h1>Игра с ботом</h1>
+            <p class="muted">Выбери настройки игры.</p>
+        </div>
+
+        <div class="panel">
+            <div class="form-group">
+                <label for="botSize">Размер поля</label>
+                <select id="botSize">
+                    <option value="3">3 × 3</option>
+                    <option value="5">5 × 5</option>
+                    <option value="10">10 × 10</option>
+                    <option value="15">15 × 15</option>
+                    <option value="20">20 × 20</option>
+                    <option value="25">25 × 25</option>
+                    <option value="30">30 × 30</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="botDifficulty">Сложность</label>
+                <select id="botDifficulty">
+                    <option value="easy">Лёгкая</option>
+                    <option value="medium">Средняя</option>
+                    <option value="hard">Сложная</option>
+                    <option value="very_hard">Очень сложная</option>
+                    <option value="impossible">Невозможная</option>
+                    <option value="mega_impossible">Мега-невозможная</option>
+                </select>
+            </div>
+
+            <button id="startBot" class="primary-button full-width">Начать игру</button>
+        </div>
+    </section>
+
+    <!-- ROOMS -->
+    <section id="roomsView" class="view hidden">
+        <button class="back-button" data-view="menuView">← Назад</button>
+
+        <div class="section-heading">
+            <p class="eyebrow">МУЛЬТИПЛЕЕР</p>
+            <h1>Игровые комнаты</h1>
+            <p class="muted">Создай комнату или присоединись к другой.</p>
+        </div>
+
+        <div class="two-column">
+            <div class="panel">
+                <h2>Создать комнату</h2>
+
+                <div class="form-group">
+                    <label for="roomGame">Игра</label>
+                    <select id="roomGame">
+                        <option value="chess">♟ Шахматы</option>
+                        <option value="checkers">⚫ Шашки</option>
+                        <option value="tic_tac_toe">❌ Крестики-нолики</option>
+                        <option value="connect_four">🔴 Четыре в ряд</option>
+                        <option value="battleship">🚢 Морской бой</option>
+                        <option value="ludo">🎲 Лудо</option>
+                        <option value="uno">🃏 UNO</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="roomAccess">Доступ</label>
+                    <select id="roomAccess">
+                        <option value="public">🌍 Любой игрок</option>
+                        <option value="friends">👥 Только друзья</option>
+                        <option value="password">🔒 По паролю</option>
+                    </select>
+                </div>
+
+                <div id="roomPasswordWrap" class="form-group hidden">
+                    <label for="roomPassword">Пароль комнаты</label>
+                    <input id="roomPassword" type="password"
+                           minlength="4" maxlength="100"
+                           placeholder="Придумай пароль">
+                </div>
+
+                <div class="form-group">
+                    <label for="roomMaxPlayers">Максимум участников</label>
+                    <select id="roomMaxPlayers">
+                        <option value="2">2</option>
+                        <option value="4">4</option>
+                        <option value="6">6</option>
+                        <option value="8">8</option>
+                        <option value="10">10</option>
+                        <option value="12" selected>12</option>
+                    </select>
+                </div>
+
+                <button id="createRoomBtn" class="primary-button full-width">
+                    Создать комнату
+                </button>
+
+                <p class="small-muted">
+                    В шахматах и шашках играют два человека.
+                    Остальные могут наблюдать.
+                </p>
+            </div>
+
+            <div class="panel">
+                <h2>Присоединиться</h2>
+
+                <div class="form-group">
+                    <label for="joinRoomCode">Код комнаты</label>
+                    <input id="joinRoomCode" type="text"
+                           maxlength="8" placeholder="Например, A1B2C3D4">
+                </div>
+
+                <div class="form-group">
+                    <label for="joinRoomPassword">Пароль (если требуется)</label>
+                    <input id="joinRoomPassword" type="password"
+                           placeholder="Пароль комнаты">
+                </div>
+
+                <button id="joinRoomBtn" class="primary-button full-width">
+                    Присоединиться
+                </button>
+
+                <p id="roomMessage" class="message-text"></p>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-heading">
+                <div>
+                    <h2>Публичные комнаты</h2>
+                    <p class="muted">Комнаты, доступные всем игрокам.</p>
+                </div>
+                <button id="refreshRoomsBtn" class="secondary-button">Обновить</button>
+            </div>
+            <div id="publicRooms" class="stack-list">
+                <p class="muted">Нажми «Обновить».</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ROOM -->
+    <section id="roomView" class="view hidden">
+        <div class="room-header">
+            <button id="leaveRoomBtn" class="secondary-button">← Покинуть комнату</button>
+            <div>
+                <h1 id="roomTitle">Игровая комната</h1>
+                <p class="muted">
+                    Код: <strong id="roomCodeDisplay">--------</strong>
+                    <button id="copyRoomCodeBtn" class="copy-button">Копировать</button>
+                </p>
+            </div>
+        </div>
+
+        <div class="room-info panel">
+            <div>
+                <span class="muted">Состояние</span>
+                <strong id="roomStatus">Ожидание игроков</strong>
+            </div>
+            <div>
+                <span class="muted">Ваша роль</span>
+                <strong id="myRoomRole">Игрок</strong>
+            </div>
+            <button id="startRoomBtn" class="primary-button hidden">Начать игру</button>
+        </div>
+
+        <div class="room-layout">
+            <div class="panel game-panel">
+                <div id="chessGame" class="hidden">
+                    <h2>♟ Шахматы</h2>
+                    <p id="chessStatus" class="game-status">Ожидание игроков</p>
+                    <div id="chessBoard" class="chess-board"></div>
+                </div>
+
+                <div id="checkersGame" class="hidden">
+                    <h2>⚫ Шашки</h2>
+                    <p id="checkersStatus" class="game-status">Ожидание игроков</p>
+                    <div id="checkersBoard" class="checkers-board"></div>
+                </div>
+
+                <div id="otherGame" class="hidden">
+                    <h2 id="otherGameTitle">Игра</h2>
+                    <p id="otherGameDescription" class="muted"></p>
+                </div>
+            </div>
+
+            <aside class="panel participants-panel">
+                <h2>Участники</h2>
+                <div id="roomPlayers" class="stack-list"></div>
+            </aside>
+        </div>
+    </section>
+
+    <!-- LEADERBOARD -->
+    <section id="leaderboardView" class="view hidden">
+        <button class="back-button" data-view="menuView">← Назад</button>
+        <div class="section-heading">
+            <p class="eyebrow">РЕЙТИНГ</p>
+            <h1>🏆 Таблица лидеров</h1>
+        </div>
+        <div id="leaderboard" class="panel stack-list">
+            <p>Загрузка...</p>
+        </div>
+    </section>
+
+    <!-- PROFILE -->
+    <section id="profileView" class="view hidden">
+        <button class="back-button" data-view="menuView">← Назад</button>
+        <div class="section-heading">
+            <p class="eyebrow">АККАУНТ</p>
+            <h1>Мой профиль</h1>
+        </div>
+
+        <div class="panel profile-card">
+            <div class="profile-avatar" id="profileAvatar">P</div>
+            <h2 id="profileName">Игрок</h2>
+            <p id="profileEmail" class="muted"></p>
+
+            <div class="stats-grid">
+                <div class="stat-card"><strong id="wins">0</strong><span>Победы</span></div>
+                <div class="stat-card"><strong id="losses">0</strong><span>Поражения</span></div>
+                <div class="stat-card"><strong id="draws">0</strong><span>Ничьи</span></div>
+                <div class="stat-card"><strong id="points">0</strong><span>Очки</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FRIENDS -->
+    <section id="friendsView" class="view hidden">
+        <button class="back-button" data-view="menuView">← Назад</button>
+        <div class="section-heading">
+            <p class="eyebrow">СООБЩЕСТВО</p>
+            <h1>Друзья</h1>
+        </div>
+
+        <div class="panel">
+            <h2>Найти игрока</h2>
+            <div class="inline-form">
+                <input id="friendSearch" type="text" placeholder="Имя пользователя">
+                <button id="searchFriend" class="primary-button">Найти</button>
+            </div>
+            <p id="friendMessage" class="message-text"></p>
+            <div id="friendSearchResults" class="stack-list"></div>
+        </div>
+
+        <div class="two-column">
+            <div class="panel">
+                <h2>Запросы в друзья</h2>
+                <div id="friendRequests" class="stack-list"></div>
+            </div>
+            <div class="panel">
+                <h2>Мои друзья</h2>
+                <div id="friendsList" class="stack-list"></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Личные сообщения</h2>
+            <p id="chatPartner" class="muted">Выбери друга для переписки.</p>
+            <div id="chatMessages" class="chat-messages"></div>
+            <div class="inline-form">
+                <input id="chatInput" type="text" maxlength="500"
+                       placeholder="Напиши сообщение...">
+                <button id="sendMessage" class="primary-button">Отправить</button>
+            </div>
+            <p id="chatStatus" class="message-text"></p>
+        </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="settingsView" class="view hidden">
+        <button class="back-button" data-view="menuView">← Назад</button>
+        <div class="section-heading">
+            <p class="eyebrow">ПЕРСОНАЛИЗАЦИЯ</p>
+            <h1>Настройки</h1>
+        </div>
+
+        <div class="panel">
+            <h2>Цвет фона</h2>
+            <div class="form-group">
+                <label for="bgColor">Выбери цвет</label>
+                <input id="bgColor" type="color" value="#101827">
+            </div>
+
+            <hr style="border-color:rgba(255,255,255,.1);margin:25px 0;">
+
+            <h2>Фотография фона</h2>
+            <p class="muted">Выбери изображение с компьютера.</p>
+
+            <div class="form-group">
+                <label for="bgPhoto">Загрузить фотографию</label>
+                <input id="bgPhoto" type="file" accept="image/*">
+            </div>
+
+            <div id="bgPhotoPreview" class="background-preview hidden">
+                <p class="small-muted">Предпросмотр фона</p>
+                <img id="bgPhotoPreviewImage" alt="Предпросмотр фотографии фона">
+            </div>
+
+            <button id="resetBackground" class="secondary-button">
+                Сбросить фон
+            </button>
+
+            <p id="backgroundMessage" class="message-text"></p>
+        </div>
+    </section>
+
+</main>
+
+<footer class="footer">
+    <p>Tic-Tac-Toe Ultimate Online</p>
+    <span>Играй. Развивайся. Побеждай.</span>
+</footer>
+
+</body>
+</html>
+
