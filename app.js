@@ -273,7 +273,6 @@ function botClick(i) {
         botBusy = false;
     }, 850);
 }
- if(currentBoard[i])return;
  currentBoard[i]="X";renderBoard($("board"),currentBoard,currentSize,botClick);
  if(hasWin(currentBoard,currentSize,"X",currentTarget)){finishBot("win");return}
  if(currentBoard.every(Boolean)){finishBot("draw");return}
