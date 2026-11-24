@@ -1,401 +1,217 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#101827">
-    <meta name="description" content="Tic-Tac-Toe Ultimate Online">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#111827">
     <title>Tic-Tac-Toe Ultimate Online</title>
-
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="style.css">
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-    <script src="app.js" defer></script>
 </head>
-
 <body>
-
-<!-- =========================
-     АВТОРИЗАЦИЯ
-========================= -->
-
-<section id="authView" class="view">
-    <div class="auth-container">
-        <h1>Tic-Tac-Toe <strong>Ultimate</strong></h1>
-
-        <div class="logo">✦</div>
-
-        <h2>Добро пожаловать!</h2>
-        <p>Войди в аккаунт или создай новый.</p>
-
-        <div class="auth-tabs">
-            <button id="loginTab" type="button">Войти</button>
-            <button id="registerTab" type="button">Регистрация</button>
-        </div>
-
-        <label for="username">Имя пользователя</label>
-        <input id="username" type="text" placeholder="Имя пользователя">
-
-        <label for="email">Email</label>
-        <input id="email" type="email" placeholder="Email">
-
-        <label for="password">Пароль</label>
-        <input id="password" type="password" placeholder="Пароль">
-
-        <button id="authSubmit" type="button">Войти</button>
-        <p id="authMessage"></p>
-    </div>
-</section>
-
-
-<!-- =========================
-     ОСНОВНОЕ МЕНЮ
-========================= -->
-
-<section id="menuView" class="view hidden">
-
-    <header class="topbar">
-        <h2>Tic-Tac-Toe Ultimate</h2>
-
-        <div class="user-info">
-            <img id="avatar" src="" alt="Аватар">
-            <span id="welcomeName">Игрок</span>
-        </div>
+<div class="app">
+    <header>
+        <div class="brand">✦ TIC-TAC-TOE <span>ULTIMATE</span></div>
+        <div id="accountBadge" class="muted">Гость</div>
     </header>
 
-    <main class="main-menu">
-        <h1>Главное меню</h1>
-        <p>Выбирай игру и соревнуйся с другими игроками!</p>
+    <main>
+        <section id="authView" class="panel auth">
+            <h1>Добро пожаловать!</h1>
+            <p class="muted">Войди или создай аккаунт.</p>
 
-        <div class="menu-grid">
-            <button id="playBtn" type="button">🎮 Играть</button>
-            <button id="botBtn" type="button">🤖 Играть с ботом</button>
-            <button id="roomsBtn" type="button">🌐 Онлайн-комнаты</button>
-            <button id="leaderboardBtn" type="button">🏆 Лидерборд</button>
-            <button id="profileBtn" type="button">👤 Профиль</button>
-            <button id="friendsBtn" type="button">👥 Друзья</button>
-            <button id="achievementsBtn" type="button">⭐ Достижения</button>
-            <button id="settingsBtn" type="button">⚙️ Настройки</button>
-        </div>
+            <div class="tabs">
+                <button id="loginTab" class="tab active">Вход</button>
+                <button id="registerTab" class="tab">Регистрация</button>
+            </div>
+
+            <label id="usernameLabel" class="hidden">
+                Никнейм
+                <input id="username" maxlength="18">
+            </label>
+            <label>Email
+                <input id="email" type="email">
+            </label>
+            <label>Пароль
+                <input id="password" type="password" minlength="6">
+            </label>
+
+            <button id="authSubmit" class="primary wide">Войти</button>
+            <p id="authMessage" class="message"></p>
+            <button id="guestBtn" class="ghost wide">Играть без аккаунта</button>
+        </section>
+
+        <section id="menuView" class="hidden">
+            <div class="welcome panel">
+                <div>
+                    <p class="eyebrow">ГЛАВНОЕ МЕНЮ</p>
+                    <h1>Привет, <span id="welcomeName">Игрок</span>!</h1>
+                    <p class="muted">Выбирай режим и устанавливай рекорды.</p>
+                </div>
+                <div class="avatar" id="avatar">T</div>
+            </div>
+
+            <div class="menu-grid">
+                <button class="menu-card" data-view="botView"><b>🤖 Играть с ботом</b><small>Выбери поле и сложность</small></button>
+                <button class="menu-card" data-view="onlineView"><b>🌐 Мультиплеер</b><small>Играть онлайн</small></button>
+                <button class="menu-card" data-view="leaderboardView"><b>🏆 Лидерборд TOP 50</b><small>Лучшие игроки</small></button>
+                <button class="menu-card" data-view="achievementsView"><b>🎖 Достижения</b><small>Игровые награды</small></button>
+                <button class="menu-card" data-view="profileView"><b>👤 Профиль</b><small>Статистика аккаунта</small></button>
+                <button class="menu-card" data-view="friendsView"><b>👥 Друзья и сообщения</b><small>Заявки и личные сообщения</small></button>
+                <button class="menu-card" data-view="settingsView"><b>🎨 Настройки</b><small>Фон и тема</small></button>
+            </div>
+
+            <button id="logoutBtn" class="ghost">Выйти из аккаунта</button>
+        </section>
+
+        <section id="botView" class="panel hidden">
+            <button class="back" data-home>← Меню</button>
+            <h2>Игра с ботом</h2>
+            <label>Размер поля
+                <select id="botSize">
+                    <option value="3">3 × 3</option>
+                    <option value="5">5 × 5</option>
+                    <option value="10">10 × 10</option>
+                    <option value="15">15 × 15</option>
+                    <option value="20">20 × 20</option>
+                    <option value="25">25 × 25</option>
+                    <option value="30">30 × 30</option>
+                </select>
+            </label>
+            <label>Сложность
+                <select id="botDifficulty">
+                    <option>Easy</option>
+                    <option>Medium</option>
+                    <option>Hard</option>
+                    <option>Very Hard</option>
+                    <option>Impossible</option>
+                    <option>Mega Impossible</option>
+                </select>
+            </label>
+            <button id="startBot" class="primary">Начать игру</button>
+        </section>
+
+        <section id="gameView" class="panel hidden">
+            <button class="back" data-home>← Меню</button>
+            <div class="game-head">
+                <div>
+                    <h2 id="gameTitle">Матч</h2>
+                    <p id="gameStatus" class="muted">Твой ход</p>
+                </div>
+                <button id="restartBot" class="ghost">Новая игра</button>
+            </div>
+            <div id="board" class="board"></div>
+        </section>
+
+        <section id="onlineView" class="panel hidden">
+            <button class="back" data-home>← Меню</button>
+            <h2>Мультиплеер</h2>
+            <p class="muted">Создай комнату или введи код друга.</p>
+            <label>Размер поля
+                <select id="partySize">
+                    <option value="3">3 × 3</option>
+                    <option value="5">5 × 5</option>
+                    <option value="10">10 × 10</option>
+                    <option value="15">15 × 15</option>
+                </select>
+            </label>
+            <button id="createParty" class="primary wide">＋ Create Party</button>
+            <div class="separator">ИЛИ</div>
+            <label>Код комнаты
+                <input id="partyCode" maxlength="8">
+            </label>
+            <button id="joinParty" class="secondary wide">Join Party</button>
+            <p id="onlineMessage" class="message"></p>
+        </section>
+
+        <section id="onlineGameView" class="panel hidden">
+            <button class="back" data-home>← Меню</button>
+            <h2>Онлайн-комната <span id="roomCodeLabel" class="code"></span></h2>
+            <p id="onlineStatus" class="muted">Ожидание игрока...</p>
+            <div id="onlineBoard" class="board"></div>
+        </section>
+
+        <section id="leaderboardView" class="panel hidden">
+            <button class="back" data-home>← Меню</button>
+            <h2>🏆 TOP 50 игроков</h2>
+            <div id="leaderboard" class="list"></div>
+        </section>
+
+        <section id="achievementsView" class="panel hidden">
+            <button class="back" data-home>← Меню</button>
+            <h2>🎖 Достижения</h2>
+            <div id="achievements" class="list"></div>
+        </section>
+
+        <section id="profileView" class="panel hidden">
+            <button class="back" data-home>← Меню</button>
+            <h2>Профиль</h2>
+            <div class="profile-card">
+                <div class="avatar big" id="profileAvatar">T</div>
+                <div>
+                    <h3 id="profileName">Игрок</h3>
+                    <p id="profileEmail" class="muted"></p>
+                </div>
+            </div>
+            <div class="stats">
+                <div><b id="wins">0</b><small>Победы</small></div>
+                <div><b id="losses">0</b><small>Поражения</small></div>
+                <div><b id="draws">0</b><small>Ничьи</small></div>
+                <div><b id="points">0</b><small>Очки</small></div>
+            </div>
+        </section>
+
+        <section id="friendsView" class="panel hidden">
+            <button class="back" data-home>← Меню</button>
+            <h2>👥 Друзья</h2>
+
+            <div class="social-block">
+                <h3>Найти игрока</h3>
+                <input id="friendSearch" maxlength="18" placeholder="Введи никнейм">
+                <button id="searchFriend" class="primary wide">Поиск</button>
+                <div id="friendSearchResults" class="list"></div>
+            </div>
+
+            <div class="social-block">
+                <h3>Входящие заявки</h3>
+                <div id="friendRequests" class="list"></div>
+            </div>
+
+            <div class="social-block">
+                <h3>Мои друзья</h3>
+                <div id="friendsList" class="list"></div>
+            </div>
+
+            <div class="social-block">
+                <h3>Сообщения</h3>
+                <p id="chatPartner" class="muted">Выбери друга, чтобы открыть переписку.</p>
+                <div id="chatMessages" class="chat-messages"></div>
+                <textarea id="chatInput" maxlength="500" placeholder="Напиши сообщение..." rows="3"></textarea>
+                <button id="sendMessage" class="primary wide">Отправить</button>
+                <p id="chatStatus" class="message"></p>
+            </div>
+        </section>
+
+        <section id="settingsView" class="panel hidden">
+            <button class="back" data-home>← Меню</button>
+            <h2>🎨 Настройки</h2>
+            <label>Цвет фона
+                <input id="bgColor" type="color" value="#111827">
+            </label>
+            <label class="inline">
+                <input id="noBackground" type="checkbox"> Чёрный фон
+            </label>
+            <label>Фотография
+                <input id="bgPhoto" type="file" accept="image/*">
+            </label>
+            <button id="resetBackground" class="ghost">Сбросить фон</button>
+        </section>
     </main>
-</section>
 
-
-<!-- =========================
-     ИГРА С БОТОМ
-========================= -->
-
-<section id="botView" class="view hidden">
-    <h1>Игра с ботом</h1>
-
-    <button id="startBot" type="button">Начать игру</button>
-
-    <div id="botGame"></div>
-
-    <button id="botBackBtn" type="button">Назад</button>
-</section>
-
-
-<!-- =========================
-     ОНЛАЙН-КОМНАТЫ
-========================= -->
-
-<section id="roomsView" class="view hidden">
-    <h1>Онлайн-комнаты</h1>
-
-    <label for="roomGame">Игра</label>
-    <select id="roomGame">
-        <option value="chess">Шахматы</option>
-        <option value="checkers">Шашки</option>
-        <option value="tictactoe">Крестики-нолики</option>
-    </select>
-
-    <label for="roomAccess">Доступ</label>
-    <select id="roomAccess">
-        <option value="public">Открытая</option>
-        <option value="private">По паролю</option>
-        <option value="friends">Только друзья</option>
-    </select>
-
-    <label for="roomMaxPlayers">Максимум игроков</label>
-    <select id="roomMaxPlayers">
-        <option value="2">2</option>
-        <option value="4">4</option>
-        <option value="8">8</option>
-        <option value="12" selected>12</option>
-    </select>
-
-    <input id="roomPassword" type="password" placeholder="Пароль комнаты">
-
-    <button id="createRoomBtn" type="button">Создать комнату</button>
-    <button id="joinRoomBtn" type="button">Присоединиться</button>
-
-    <h2>Открытые комнаты</h2>
-    <div id="publicRooms"></div>
-
-    <button id="roomsBackBtn" type="button">Назад</button>
-</section>
-
-
-<!-- =========================
-     ВНУТРИ КОМНАТЫ
-========================= -->
-
-<section id="roomView" class="view hidden">
-    <h1>Игровая комната</h1>
-
-    <div id="roomPlayers"></div>
-
-    <div id="chessGame" class="hidden">
-        <div id="chessBoard"></div>
-    </div>
-
-    <div id="checkersGame" class="hidden">
-        <div id="checkersBoard"></div>
-    </div>
-
-    <div id="otherGame" class="hidden"></div>
-
-    <button id="leaveRoomBtn" type="button">Покинуть комнату</button>
-</section>
-
-
-<!-- =========================
-     ЛИДЕРБОРД
-========================= -->
-
-<section id="leaderboardView" class="view hidden">
-    <h1>🏆 Лидерборд</h1>
-
-    <div class="leaderboard-table">
-        <table>
-            <thead>
-                <tr>
-                    <th>Место</th>
-                    <th>Игрок</th>
-                    <th>Победы</th>
-                    <th>Очки</th>
-                    <th>Лучшее достижение</th>
-                    <th>Лучшая сложность</th>
-                    <th>Лучшая карта</th>
-                </tr>
-            </thead>
-
-            <tbody id="leaderboardBody">
-                <tr>
-                    <td colspan="7">Загрузка...</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <button id="leaderboardBackBtn" type="button">Назад</button>
-</section>
-
-
-<!-- =========================
-     ПРОФИЛЬ
-========================= -->
-
-<section id="profileView" class="view hidden">
-    <h1>👤 Профиль игрока</h1>
-
-    <img id="profileAvatar" src="" alt="Аватар профиля">
-
-    <h2 id="profileName">Игрок</h2>
-
-    <div class="profile-stats">
-        <div>
-            <h3>Победы</h3>
-            <span id="profileWins">0</span>
-        </div>
-
-        <div>
-            <h3>Поражения</h3>
-            <span id="profileLosses">0</span>
-        </div>
-
-        <div>
-            <h3>Ничьи</h3>
-            <span id="profileDraws">0</span>
-        </div>
-
-        <div>
-            <h3>Очки</h3>
-            <span id="profilePoints">0</span>
-        </div>
-    </div>
-
-    <button id="profileAchievementsBtn" type="button">
-        ⭐ Мои достижения
-    </button>
-
-    <button id="profileBackBtn" type="button">Назад</button>
-</section>
-
-
-<!-- =========================
-     ДОСТИЖЕНИЯ
-========================= -->
-
-<section id="achievementsView" class="view hidden">
-    <h1>⭐ Достижения</h1>
-
-    <p>Собирай награды, побеждай и открывай новые достижения!</p>
-
-    <div id="achievementsStats"></div>
-
-    <div id="achievementsList" class="achievements-grid">
-        <div class="achievement-card">
-            <span>🏆</span>
-            <h3>Первая победа</h3>
-            <p>Одержи свою первую победу.</p>
-        </div>
-
-        <div class="achievement-card">
-            <span>🔥</span>
-            <h3>Серия побед</h3>
-            <p>Победи несколько раз подряд.</p>
-        </div>
-
-        <div class="achievement-card">
-            <span>👑</span>
-            <h3>Чемпион</h3>
-            <p>Стань одним из лучших игроков.</p>
-        </div>
-    </div>
-
-    <button id="achievementsBackBtn" type="button">Назад</button>
-</section>
-
-
-<!-- =========================
-     ДРУЗЬЯ
-========================= -->
-
-<section id="friendsView" class="view hidden">
-    <h1>👥 Друзья</h1>
-
-    <input id="friendUsername" type="text" placeholder="Имя пользователя">
-    <button id="addFriendBtn" type="button">Добавить друга</button>
-
-    <p id="friendMessage"></p>
-
-    <h2>Список друзей</h2>
-    <div id="friendsList"></div>
-
-    <h2>Заявки в друзья</h2>
-    <div id="friendRequests"></div>
-
-    <div id="chatView" class="hidden">
-        <h2>Чат</h2>
-        <div id="chatMessages"></div>
-
-        <input id="chatInput" type="text" placeholder="Сообщение">
-        <button id="sendMessageBtn" type="button">Отправить</button>
-    </div>
-
-    <button id="friendsBackBtn" type="button">Назад</button>
-</section>
-
-
-<!-- =========================
-     НАСТРОЙКИ
-========================= -->
-
-<section id="settingsView" class="view hidden">
- 
-<h3>Фотографии фона</h3>
-
-<div id="backgroundLibrary"></div>
-
-<h3>Загрузить собственное фото</h3>
-<input
-    type="file"
-    id="bgPhoto"
-    accept="image/*"
->
-
-<p id="backgroundMessage"></p>
-
-    <h1>⚙️ Настройки</h1>
-
-    <h2>Фон сайта</h2>
-
-    <p>Выбери готовый фон или загрузи собственную фотографию.</p>
-
-    <h3>📚 Библиотека фонов</h3>
-
-    <div id="backgroundLibrary" class="background-library">
-
-        <button class="background-option" type="button"
-            data-background="gradient1">
-            <span class="background-preview gradient1"></span>
-            <span>Космос</span>
-        </button>
-
-        <button class="background-option" type="button"
-            data-background="gradient2">
-            <span class="background-preview gradient2"></span>
-            <span>Неон</span>
-        </button>
-
-        <button class="background-option" type="button"
-            data-background="gradient3">
-            <span class="background-preview gradient3"></span>
-            <span>Океан</span>
-        </button>
-
-        <button class="background-option" type="button"
-            data-background="gradient4">
-            <span class="background-preview gradient4"></span>
-            <span>Закат</span>
-        </button>
-
-        <button class="background-option" type="button"
-            data-background="gradient5">
-            <span class="background-preview gradient5"></span>
-            <span>Тёмный</span>
-        </button>
-
-    </div>
-
-    <h3>🖼️ Своя фотография</h3>
-
-    <label for="bgPhoto">Выбрать изображение с устройства:</label>
-
-    <input
-        type="file"
-        id="bgPhoto"
-        accept="image/*"
-    >
-
-    <div id="backgroundPreview">
-        <p>Предпросмотр фона</p>
-    </div>
-
-    <button id="removeBgPhoto" type="button">
-        Убрать фотографию
-    </button>
-
-    <h3>Цвет фона</h3>
-
-    <input id="backgroundColor" type="color" value="#101827">
-
-    <button id="saveBackgroundColor" type="button">
-        Сохранить цвет
-    </button>
-
-    <button id="resetBackground" type="button">
-        Сбросить фон
-    </button>
-
-    <button id="settingsBackBtn" type="button">Назад</button>
-
-</section>
-
-
+    <footer>Tic-Tac-Toe Ultimate Online · Web Edition</footer>
+</div>
+<script src="app.js"></script>
 </body>
 </html>
