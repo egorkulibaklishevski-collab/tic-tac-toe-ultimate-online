@@ -49,9 +49,19 @@ const achievements = [
     ["giga_champion", "Гига чемпион", "Победи на всех картах и всех сложностях робота"]
 ];
 
-let unlocked = JSON.parse(
-    localStorage.getItem("ttt_achievements") || "[]"
-);
+function readLocalAchievements() {
+    try {
+        const value = JSON.parse(
+            localStorage.getItem("ttt_achievements") || "[]"
+        );
+
+        return Array.isArray(value) ? value : [];
+    } catch {
+        return [];
+    }
+}
+
+let unlocked = readLocalAchievements();
 
 const gigaSizes = [3, 5, 10, 15];
 
@@ -64,10 +74,78 @@ const gigaDifficulties = [
     "Mega Impossible"
 ];
 
-let gigaProgress = JSON.parse(
-    localStorage.getItem("giga_champion_progress") || "{}"
-);
+let gigaProgress = {};
 
+try {
+    gigaProgress = JSON.parse(
+        localStorage.getItem("giga_champion_progress") || "{}"
+    ) || {};
+} catch {
+    gigaProgress = {};
+}
+
+// ===============================
+// ACHIEVEMENT CLOUD SYNC
+// ===============================
+async function saveAchievements() {
+    localStorage.setItem(
+        "ttt_achievements",
+        JSON.stringify(unlocked)
+    );
+
+    if (!sb || !user || !profile) return;
+
+    const { data, error } = await sb
+        .from("profiles")
+        .update({
+            achievements: unlocked
+        })
+        .eq("id", user.id)
+        .select("id, achievements")
+        .maybeSingle();
+
+    if (error) {
+        console.error("Ошибка сохранения достижений:", error);
+        return;
+    }
+
+    if (!data) {
+        console.error("Достижения не сохранены: профиль не найден.");
+        return;
+    }
+
+    profile.achievements = data.achievements || [];
+}
+
+async function syncAchievements() {
+    if (!sb || !user || !profile) return;
+
+    const cloudAchievements = Array.isArray(profile.achievements)
+        ? profile.achievements
+        : [];
+
+    const merged = [
+        ...new Set([
+            ...cloudAchievements,
+            ...unlocked
+        ])
+    ];
+
+    unlocked = merged;
+
+    localStorage.setItem(
+        "ttt_achievements",
+        JSON.stringify(unlocked)
+    );
+
+    await saveAchievements();
+
+    renderAchievements();
+}
+
+// ===============================
+// GIGA PROGRESS
+// ===============================
 function recordGigaProgress(size, difficulty) {
     const key = `${size}x${size}_${difficulty}`;
 
@@ -174,63 +252,79 @@ $("guestBtn").onclick = guest;
 async function loadProfile() {
     if (!sb || !user) return;
 
-    let { data, error } = await sb
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
+    const currentUserId = user.id;
 
-    if (error) {
-        console.error("Ошибка загрузки профиля:", error);
-        return;
-    }
-
-    // Создаём профиль, если его ещё нет
-    if (!data) {
-        const username =
-            user.user_metadata?.username || "Игрок";
-
-        const { data: newProfile, error: createError } = await sb
+    try {
+        let { data, error } = await sb
             .from("profiles")
-            .insert({
-                id: user.id,
-                username: username,
-                wins: 0,
-                losses: 0,
-                draws: 0,
-                points: 0
-            })
-            .select()
-            .single();
+            .select("*")
+            .eq("id", currentUserId)
+            .maybeSingle();
 
-        if (createError) {
-            console.error(
-                "Ошибка создания профиля:",
-                createError
-            );
-            return;
+        if (error) {
+            throw new Error(error.message);
         }
 
-        data = newProfile;
+        // Создаём профиль, если его ещё нет
+        if (!data) {
+            const username =
+                user.user_metadata?.username || "Игрок";
+
+            const { data: newProfile, error: createError } = await sb
+                .from("profiles")
+                .insert({
+                    id: currentUserId,
+                    username,
+                    wins: 0,
+                    losses: 0,
+                    draws: 0,
+                    points: 0,
+                    achievements: []
+                })
+                .select()
+                .single();
+
+            if (createError) {
+                throw new Error(createError.message);
+            }
+
+            data = newProfile;
+        }
+
+        if (!data.achievements) {
+            data.achievements = [];
+        }
+
+        if (!Array.isArray(data.achievements)) {
+            data.achievements = [];
+        }
+
+        if (!user || user.id !== currentUserId) return;
+
+        profile = data;
+
+        updateAccount();
+
+        $("profileName").textContent =
+            profile.username || "Игрок";
+
+        $("profileEmail").textContent =
+            user.email || "";
+
+        $("profileAvatar").textContent =
+            (profile.username || "T")[0].toUpperCase();
+
+        $("wins").textContent = Number(profile.wins || 0);
+        $("losses").textContent = Number(profile.losses || 0);
+        $("draws").textContent = Number(profile.draws || 0);
+        $("points").textContent = Number(profile.points || 0);
+
+        // Объединяем локальные и облачные достижения
+        await syncAchievements();
+
+    } catch (error) {
+        console.error("Ошибка загрузки профиля:", error);
     }
-
-    profile = data;
-
-    updateAccount();
-
-    $("profileName").textContent =
-        profile.username || "Игрок";
-
-    $("profileEmail").textContent =
-        user.email || "";
-
-    $("profileAvatar").textContent =
-        (profile.username || "T")[0].toUpperCase();
-
-    $("wins").textContent = profile.wins || 0;
-    $("losses").textContent = profile.losses || 0;
-    $("draws").textContent = profile.draws || 0;
-    $("points").textContent = profile.points || 0;
 }
 
 // ===============================
@@ -340,7 +434,6 @@ document.querySelectorAll("[data-view]").forEach(button => {
             renderAchievements();
         }
 
-        // Обновляем профиль при каждом открытии
         if (button.dataset.view === "profileView") {
             loadProfile();
         }
@@ -430,7 +523,6 @@ function botPick(board, n, target, difficulty) {
 
     if (!empty.length) return -1;
 
-    // Победа или блокировка
     for (const mark of ["O", "X"]) {
         for (const index of empty) {
             board[index] = mark;
@@ -670,8 +762,37 @@ async function finishBot(result) {
         renderAchievements();
     }
 
-    // Сохраняем статистику аккаунта
-    if (user && sb) {
+    if (!sb || !user) {
+        console.warn("Статистика не сохранена: пользователь не авторизован.");
+        $("gameStatus").textContent += " Войди в аккаунт для сохранения.";
+        return;
+    }
+
+    const currentUserId = user.id;
+
+    try {
+        console.log("Начинаем сохранение статистики...");
+        console.log("User ID:", currentUserId);
+
+        // Получаем актуальные значения из базы
+        const { data: currentProfile, error: loadError } = await sb
+            .from("profiles")
+            .select("id, username, wins, losses, draws, points")
+            .eq("id", currentUserId)
+            .maybeSingle();
+
+        if (loadError) {
+            throw new Error(
+                "Ошибка чтения профиля: " + loadError.message
+            );
+        }
+
+        if (!currentProfile) {
+            throw new Error(
+                "Профиль не найден для User ID: " + currentUserId
+            );
+        }
+
         const field =
             result === "win"
                 ? "wins"
@@ -679,32 +800,58 @@ async function finishBot(result) {
                     ? "losses"
                     : "draws";
 
-        const newValue = (profile?.[field] || 0) + 1;
+        const newStats = {
+            [field]: Number(currentProfile[field] || 0) + 1,
+            points:
+                Number(currentProfile.points || 0) +
+                (result === "win" ? 10 : result === "draw" ? 2 : 0)
+        };
 
-        const points =
-            (profile?.points || 0) +
-            (result === "win" ? 10 : result === "draw" ? 2 : 0);
+        console.log("Отправляем обновление:", newStats);
 
-        const { error } = await sb
+        const { data: updatedProfile, error: updateError } = await sb
             .from("profiles")
-            .update({
-                [field]: newValue,
-                points: points
-            })
-            .eq("id", user.id);
+            .update(newStats)
+            .eq("id", currentUserId)
+            .select()
+            .maybeSingle();
 
-        if (error) {
-            console.error(
-                "Ошибка обновления профиля:",
-                error
+        if (updateError) {
+            throw new Error(
+                "Ошибка обновления: " + updateError.message
             );
-
-            $("gameStatus").textContent +=
-                " Ошибка сохранения статистики.";
-
-        } else {
-            await loadProfile();
         }
+
+        if (!updatedProfile) {
+            throw new Error(
+                "Supabase не обновил ни одной строки. Проверь ID и RLS."
+            );
+        }
+
+        profile = updatedProfile;
+
+        console.log(
+            "СТАТИСТИКА УСПЕШНО СОХРАНЕНА:",
+            profile
+        );
+
+        updateAccount();
+
+        $("wins").textContent = Number(profile.wins || 0);
+        $("losses").textContent = Number(profile.losses || 0);
+        $("draws").textContent = Number(profile.draws || 0);
+        $("points").textContent = Number(profile.points || 0);
+
+        $("gameStatus").textContent += " Статистика сохранена!";
+
+    } catch (error) {
+        console.error(
+            "ОШИБКА СОХРАНЕНИЯ СТАТИСТИКИ:",
+            error
+        );
+
+        $("gameStatus").textContent +=
+            " Ошибка сохранения: " + error.message;
     }
 }
 
@@ -720,10 +867,15 @@ function unlock(key) {
         "ttt_achievements",
         JSON.stringify(unlocked)
     );
+
+    // Сохраняем достижения в облако
+    saveAchievements();
 }
 
 function renderAchievements() {
     const box = $("achievements");
+
+    if (!box) return;
 
     box.innerHTML = "";
 
@@ -1048,15 +1200,20 @@ if (configured && sb) {
         }
     });
 
-    sb.auth.onAuthStateChange(async (event, session) => {
+    // Не выполняем запросы к Supabase прямо внутри callback
+    sb.auth.onAuthStateChange((event, session) => {
         user = session?.user || null;
 
         if (user) {
-            await loadProfile();
+            setTimeout(async () => {
+                if (!user || user.id !== session.user.id) return;
 
-            updateAccount();
+                await loadProfile();
 
-            show("menuView");
+                updateAccount();
+
+                show("menuView");
+            }, 0);
 
         } else if (event === "SIGNED_OUT") {
             profile = null;
@@ -1142,3 +1299,4 @@ if (savedPhoto) {
 
     document.body.style.backgroundSize = "cover";
 }
+
