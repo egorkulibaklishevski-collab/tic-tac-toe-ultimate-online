@@ -1467,7 +1467,14 @@ async function sendDirectMessage() {
 // ======================================================
 // BACKGROUND SETTINGS
 // ======================================================
+<h3>Фон сайта</h3>
 
+<label for="bgPhoto">Выбрать фотографию фона:</label>
+<input type="file" id="bgPhoto" accept="image/*">
+
+<button id="removeBgPhoto" type="button">
+    Убрать фотографию
+</button>
 function applyBackground() {
     const mode = localStorage.getItem("siteBackgroundMode");
     const image = localStorage.getItem("siteBackgroundImage");
