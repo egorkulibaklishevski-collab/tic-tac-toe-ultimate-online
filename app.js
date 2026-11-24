@@ -24,7 +24,7 @@ const sb = configured && window.supabase
 // ===============================
 // GLOBAL VARIABLES
 // ===============================
-
+let onlineChannel = null;
 let user = null;
 let profile = null;
 
