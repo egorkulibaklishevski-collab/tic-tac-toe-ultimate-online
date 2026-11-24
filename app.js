@@ -1,7 +1,7 @@
+
 // ===============================
 // SUPABASE
 // ===============================
-
 const SUPABASE_URL = "https://hykioljldierzlpdrjgo.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_SG0GV_0f3uD1a0IRvWCIpw_v4dQYNeA";
 
@@ -27,19 +27,16 @@ const sb = configured && window.supabase
 let onlineChannel = null;
 let user = null;
 let profile = null;
-
 let currentSize = 3;
 let currentTarget = 3;
 let currentBoard = [];
 let botDifficulty = "Easy";
-
 let onlineParty = null;
 let mySymbol = null;
 
 // ===============================
 // ACHIEVEMENTS
 // ===============================
-
 const achievements = [
     ["first_win", "Первая победа", "Выиграй первый матч"],
     ["board_3", "Маленькая победа", "Победи на поле 3×3"],
@@ -99,7 +96,6 @@ function recordGigaProgress(size, difficulty) {
 // ===============================
 // NAVIGATION
 // ===============================
-
 function show(id) {
     document.querySelectorAll("main section").forEach(section => {
         section.classList.add("hidden");
@@ -114,7 +110,10 @@ function show(id) {
 
 function message(id, text) {
     const element = $(id);
-    if (element) element.textContent = text || "";
+
+    if (element) {
+        element.textContent = text || "";
+    }
 }
 
 function targetFor(n) {
@@ -124,7 +123,6 @@ function targetFor(n) {
 // ===============================
 // ACCOUNT
 // ===============================
-
 function updateAccount() {
     $("accountBadge").textContent =
         user ? (profile?.username || user.email) : "Гость";
@@ -173,19 +171,47 @@ $("guestBtn").onclick = guest;
 // ===============================
 // PROFILE
 // ===============================
-
 async function loadProfile() {
     if (!sb || !user) return;
 
-    const { data, error } = await sb
+    let { data, error } = await sb
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .maybeSingle();
 
     if (error) {
-        console.error(error);
+        console.error("Ошибка загрузки профиля:", error);
         return;
+    }
+
+    // Создаём профиль, если его ещё нет
+    if (!data) {
+        const username =
+            user.user_metadata?.username || "Игрок";
+
+        const { data: newProfile, error: createError } = await sb
+            .from("profiles")
+            .insert({
+                id: user.id,
+                username: username,
+                wins: 0,
+                losses: 0,
+                draws: 0,
+                points: 0
+            })
+            .select()
+            .single();
+
+        if (createError) {
+            console.error(
+                "Ошибка создания профиля:",
+                createError
+            );
+            return;
+        }
+
+        data = newProfile;
     }
 
     profile = data;
@@ -193,24 +219,23 @@ async function loadProfile() {
     updateAccount();
 
     $("profileName").textContent =
-        profile?.username || "Игрок";
+        profile.username || "Игрок";
 
     $("profileEmail").textContent =
         user.email || "";
 
     $("profileAvatar").textContent =
-        (profile?.username || "T")[0].toUpperCase();
+        (profile.username || "T")[0].toUpperCase();
 
-    $("wins").textContent = profile?.wins || 0;
-    $("losses").textContent = profile?.losses || 0;
-    $("draws").textContent = profile?.draws || 0;
-    $("points").textContent = profile?.points || 0;
+    $("wins").textContent = profile.wins || 0;
+    $("losses").textContent = profile.losses || 0;
+    $("draws").textContent = profile.draws || 0;
+    $("points").textContent = profile.points || 0;
 }
 
 // ===============================
 // LOGIN / REGISTER
 // ===============================
-
 $("authSubmit").onclick = async () => {
     if (!sb) {
         message("authMessage", "Проверь настройки Supabase.");
@@ -221,7 +246,10 @@ $("authSubmit").onclick = async () => {
     const password = $("password").value;
 
     if (!email || password.length < 6) {
-        message("authMessage", "Введи email и пароль минимум из 6 символов.");
+        message(
+            "authMessage",
+            "Введи email и пароль минимум из 6 символов."
+        );
         return;
     }
 
@@ -232,7 +260,10 @@ $("authSubmit").onclick = async () => {
             const username = $("username").value.trim();
 
             if (username.length < 3) {
-                message("authMessage", "Никнейм должен содержать минимум 3 символа.");
+                message(
+                    "authMessage",
+                    "Никнейм должен содержать минимум 3 символа."
+                );
                 return;
             }
 
@@ -272,7 +303,9 @@ $("authSubmit").onclick = async () => {
 };
 
 $("logoutBtn").onclick = async () => {
-    if (sb) await sb.auth.signOut();
+    if (sb) {
+        await sb.auth.signOut();
+    }
 
     user = null;
     profile = null;
@@ -284,7 +317,6 @@ $("logoutBtn").onclick = async () => {
 // ===============================
 // NAVIGATION BUTTONS
 // ===============================
-
 document.querySelectorAll("[data-home]").forEach(button => {
     button.onclick = () => {
         if (onlineChannel && sb) {
@@ -307,13 +339,17 @@ document.querySelectorAll("[data-view]").forEach(button => {
         if (button.dataset.view === "achievementsView") {
             renderAchievements();
         }
+
+        // Обновляем профиль при каждом открытии
+        if (button.dataset.view === "profileView") {
+            loadProfile();
+        }
     };
 });
 
 // ===============================
 // GAME BOARD
 // ===============================
-
 function makeBoard(n) {
     return Array(n * n).fill("");
 }
@@ -385,7 +421,6 @@ function renderBoard(container, board, n, clickable) {
 // ===============================
 // BOT AI
 // ===============================
-
 function botPick(board, n, target, difficulty) {
     const empty = [];
 
@@ -412,7 +447,9 @@ function botPick(board, n, target, difficulty) {
         difficulty === "Easy" &&
         Math.random() < 0.65
     ) {
-        return empty[Math.floor(Math.random() * empty.length)];
+        return empty[
+            Math.floor(Math.random() * empty.length)
+        ];
     }
 
     let best = -Infinity;
@@ -467,13 +504,14 @@ function botPick(board, n, target, difficulty) {
         }
     }
 
-    return choices[Math.floor(Math.random() * choices.length)];
+    return choices[
+        Math.floor(Math.random() * choices.length)
+    ];
 }
 
 // ===============================
 // BOT GAME
 // ===============================
-
 let botBusy = false;
 let botGameOver = false;
 
@@ -588,7 +626,6 @@ function botClick(index) {
 // ===============================
 // FINISH BOT GAME
 // ===============================
-
 async function finishBot(result) {
     if (botGameOver) return;
 
@@ -633,6 +670,7 @@ async function finishBot(result) {
         renderAchievements();
     }
 
+    // Сохраняем статистику аккаунта
     if (user && sb) {
         const field =
             result === "win"
@@ -651,12 +689,19 @@ async function finishBot(result) {
             .from("profiles")
             .update({
                 [field]: newValue,
-                points
+                points: points
             })
             .eq("id", user.id);
 
         if (error) {
-            console.error("Ошибка обновления профиля:", error);
+            console.error(
+                "Ошибка обновления профиля:",
+                error
+            );
+
+            $("gameStatus").textContent +=
+                " Ошибка сохранения статистики.";
+
         } else {
             await loadProfile();
         }
@@ -666,7 +711,6 @@ async function finishBot(result) {
 // ===============================
 // UNLOCK ACHIEVEMENTS
 // ===============================
-
 function unlock(key) {
     if (!key || unlocked.includes(key)) return;
 
@@ -718,7 +762,6 @@ function renderAchievements() {
                 <small>${desc}</small>
                 ${extra}
             </div>
-
             <span>
                 ${unlocked.includes(id) ? "Получено" : "Закрыто"}
             </span>
@@ -731,7 +774,6 @@ function renderAchievements() {
 // ===============================
 // LEADERBOARD
 // ===============================
-
 async function loadLeaderboard() {
     const box = $("leaderboard");
 
@@ -752,7 +794,11 @@ async function loadLeaderboard() {
         .limit(50);
 
     if (error) {
-        box.textContent = error.message;
+        console.error("Ошибка лидерборда:", error);
+
+        box.textContent =
+            "Не удалось загрузить рейтинг: " + error.message;
+
         return;
     }
 
@@ -773,6 +819,10 @@ async function loadLeaderboard() {
 
         box.appendChild(row);
     });
+
+    if (!data || data.length === 0) {
+        box.textContent = "Пока игроков в рейтинге нет.";
+    }
 
     if (user && data?.[0]?.id === user.id) {
         unlock("champion");
@@ -797,7 +847,6 @@ function escapeHtml(value) {
 // ===============================
 // ONLINE PARTIES
 // ===============================
-
 async function createParty() {
     if (!sb || !user) {
         message(
@@ -869,7 +918,6 @@ async function openParty(partyId) {
 
     onlineParty = data;
 
-    // В исходной настройке базы использовалась party_players.
     const { data: members, error: membersError } = await sb
         .from("party_players")
         .select("*")
@@ -982,7 +1030,6 @@ async function onlineClick(index) {
 // ===============================
 // AUTH SESSION
 // ===============================
-
 if (configured && sb) {
     sb.auth.getSession().then(async ({ data, error }) => {
         if (error) {
@@ -996,6 +1043,7 @@ if (configured && sb) {
             await loadProfile();
 
             updateAccount();
+
             show("menuView");
         }
     });
@@ -1007,12 +1055,14 @@ if (configured && sb) {
             await loadProfile();
 
             updateAccount();
+
             show("menuView");
 
         } else if (event === "SIGNED_OUT") {
             profile = null;
 
             updateAccount();
+
             show("authView");
         }
     });
@@ -1024,11 +1074,11 @@ if (configured && sb) {
 // ===============================
 // BACKGROUND SETTINGS
 // ===============================
-
 const savedColor =
     localStorage.getItem("ttt_bg") || "#111827";
 
 document.body.style.background = savedColor;
+
 $("bgColor").value = savedColor;
 
 $("bgColor").oninput = event => {
@@ -1073,12 +1123,14 @@ $("bgPhoto").onchange = event => {
 
 $("resetBackground").onclick = () => {
     document.body.style.background = "#111827";
+
     document.body.style.backgroundImage = "";
 
     localStorage.removeItem("ttt_bg");
     localStorage.removeItem("ttt_photo");
 
     $("bgColor").value = "#111827";
+
     $("noBackground").checked = false;
 };
 
