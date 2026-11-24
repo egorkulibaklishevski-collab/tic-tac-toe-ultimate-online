@@ -37,6 +37,206 @@ const GAME_NAMES = {
     uno: "UNO"
 };
 
+// ==========================================
+// EXTRA BACKGROUND PHOTO LIBRARY
+// ==========================================
+
+const backgroundLibrary = [
+    {
+        name: "Космос",
+        url: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1920"
+    },
+    {
+        name: "Горы",
+        url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920"
+    },
+    {
+        name: "Ночной город",
+        url: "https://images.unsplash.com/photo-1519608487953-e999c86e7455?w=1920"
+    },
+    {
+        name: "Океан",
+        url: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?w=1920"
+    },
+    {
+        name: "Лес",
+        url: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920"
+    }
+];
+
+function applyBackground(url) {
+    document.body.style.backgroundImage = `url("${url}")`;
+    document.body.style.backgroundSize = "cover";
+    document.body.style.backgroundPosition = "center";
+    document.body.style.backgroundAttachment = "fixed";
+
+    localStorage.setItem("ttt_photo", url);
+    localStorage.setItem("ttt_bg_type", "photo");
+}
+
+function renderBackgroundLibrary() {
+    const box = $("backgroundLibrary");
+    if (!box) return;
+
+    box.innerHTML = "";
+
+    backgroundLibrary.forEach((background, index) => {
+        const button = document.createElement("button");
+
+        button.className = "background-option";
+        button.textContent = background.name;
+
+        button.style.backgroundImage =
+            `url("${background.url}")`;
+
+        button.style.backgroundSize = "cover";
+        button.style.backgroundPosition = "center";
+        button.style.minHeight = "100px";
+
+        button.onclick = () => {
+            applyBackground(background.url);
+            message("backgroundMessage", "Фон изменён!");
+        };
+
+        box.appendChild(button);
+    });
+}
+
+function restoreBackground() {
+    const photo = localStorage.getItem("ttt_photo");
+
+    if (photo) {
+        applyBackground(photo);
+        return;
+    }
+
+    const color = localStorage.getItem("ttt_bg") || "#111827";
+    document.body.style.backgroundImage = "";
+    document.body.style.background = color;
+}
+
+function setupExtraBackgrounds() {
+    renderBackgroundLibrary();
+    restoreBackground();
+
+    const upload = $("bgPhoto");
+
+    if (upload) {
+        upload.addEventListener("change", event => {
+            const file = event.target.files?.[0];
+
+            if (!file) return;
+
+            if (!file.type.startsWith("image/")) {
+                message("backgroundMessage", "Выбери файл изображения.");
+                return;
+            }
+
+            if (file.size > 2 * 1024 * 1024) {
+                message("backgroundMessage", "Максимальный размер фото — 2 МБ.");
+                return;
+            }
+
+            const reader = new FileReader();
+
+            reader.onload = () => {
+                try {
+                    applyBackground(reader.result);
+                    message("backgroundMessage", "Твой фон сохранён!");
+                } catch (error) {
+                    message("backgroundMessage", "Не удалось сохранить фото.");
+                    console.error(error);
+                }
+            };
+
+            reader.readAsDataURL(file);
+        });
+    }
+}
+
+// ==========================================
+// BEST ACHIEVEMENT
+// ==========================================
+
+function getBestAchievement(playerAchievements) {
+    const ids = Array.isArray(playerAchievements)
+        ? playerAchievements
+        : [];
+
+    const unlockedAchievements = achievements.filter(item =>
+        ids.includes(item[0])
+    );
+
+    if (!unlockedAchievements.length) return "Пока нет";
+
+    return unlockedAchievements[unlockedAchievements.length - 1][1];
+}
+
+// ==========================================
+// EXTENDED LEADERBOARD
+// ==========================================
+
+async function loadExtendedLeaderboard() {
+    const box = $("leaderboard");
+
+    if (!box || !sb) return;
+
+    box.textContent = "Загрузка рейтинга...";
+
+    const { data, error } = await sb
+        .from("profiles")
+        .select("id,username,wins,points,achievements")
+        .order("points", { ascending: false })
+        .order("wins", { ascending: false })
+        .limit(50);
+
+    if (error) {
+        box.textContent = "Ошибка: " + error.message;
+        return;
+    }
+
+    box.innerHTML = "";
+
+    const header = document.createElement("div");
+    header.className = "list-row leaderboard-header";
+    header.textContent =
+        "Место | Игрок | Очки | Победы | Лучшее достижение";
+
+    box.appendChild(header);
+
+    (data || []).forEach((player, index) => {
+        const row = document.createElement("div");
+        row.className = "list-row";
+
+        const name = document.createElement("b");
+        name.textContent =
+            `#${index + 1} ${player.username || "Игрок"}`;
+
+        const stats = document.createElement("span");
+        stats.textContent =
+            `${player.points || 0} очков · ${player.wins || 0} побед`;
+
+        const best = document.createElement("small");
+        best.textContent =
+            "🏅 " + getBestAchievement(player.achievements);
+
+        row.append(name, stats, best);
+        box.appendChild(row);
+    });
+
+    if (!data?.length) {
+        box.textContent = "Игроков пока нет.";
+    }
+}
+
+// ==========================================
+// EXTRA INITIALIZATION
+// ==========================================
+
+document.addEventListener("DOMContentLoaded", () => {
+    setupExtraBackgrounds();
+});
+
 // ======================================================
 // GENERAL HELPERS
 // ======================================================
