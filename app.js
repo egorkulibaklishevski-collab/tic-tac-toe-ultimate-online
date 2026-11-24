@@ -33,7 +33,6 @@ let currentTarget = 3;
 let currentBoard = [];
 let botDifficulty = "Easy";
 
-let onlineChannel = null;
 let onlineParty = null;
 let mySymbol = null;
 
