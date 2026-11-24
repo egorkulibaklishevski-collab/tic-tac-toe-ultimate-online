@@ -1,5 +1,5 @@
 const SUPABASE_URL = "https://hykioljldierzlpdrjgo.supabase.co";
-const SUPABASE_ANON_KEY = "ТВОЙ_PUBLISHABLE_KEY";
+const SUPABASE_ANON_KEY = "sb_publishable_SG0GV_0f3uD1a0IRvWCIpw_v4dQYNeA";
 
 const configured = SUPABASE_URL.startsWith("https://")
     && SUPABASE_ANON_KEY.startsWith("sb_publishable_");
@@ -22,10 +22,49 @@ const achievements = [
  ["board_15","Гигантская победа","Победи на поле 15×15"],
  ["hard_win","Сложный вызов","Победи на Hard или выше"],
  ["top_50","TOP 50","Попади в мировой TOP 50"],
- ["champion","Чемпион","Займи первое место в рейтинге"]
+ ["champion","Чемпион","Займи первое место в рейтинге"],
+ ["giga_champion","Гига чемпион","Победи на всех картах и всех сложностях робота"]
 ];
 let unlocked = JSON.parse(localStorage.getItem("ttt_achievements") || "[]");
+const gigaSizes = [3, 5, 10, 15];
 
+const gigaDifficulties = [
+    "Easy",
+    "Medium",
+    "Hard",
+    "Very Hard",
+    "Impossible",
+    "Mega Impossible"
+];
+
+let gigaProgress = JSON.parse(
+    localStorage.getItem("giga_champion_progress") || "{}"
+);
+
+function recordGigaProgress(size, difficulty) {
+    const key = `${size}x${size}_${difficulty}`;
+
+    gigaProgress[key] = true;
+
+    localStorage.setItem(
+        "giga_champion_progress",
+        JSON.stringify(gigaProgress)
+    );
+
+    let total = 0;
+
+    gigaSizes.forEach(size => {
+        gigaDifficulties.forEach(difficulty => {
+            if (gigaProgress[`${size}x${size}_${difficulty}`]) {
+                total++;
+            }
+        });
+    });
+
+    if (total >= 24) {
+        unlock("giga_champion");
+    }
+}
 function show(id) {
  document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));
  $(id).classList.remove("hidden");
@@ -155,9 +194,85 @@ function startBot(){
  $("gameStatus").textContent=`Ты — X · нужно ${currentTarget} в ряд`;
  show("gameView");renderBoard($("board"),currentBoard,currentSize,botClick);
 }
-$("startBot").onclick=startBot;
-$("restartBot").onclick=startBot;
-function botClick(i){
+let botBusy = false;
+let botGameOver = false;
+
+function startBot() {
+    currentSize = Number($("botSize").value);
+    currentTarget = targetFor(currentSize);
+    botDifficulty = $("botDifficulty").value;
+
+    currentBoard = makeBoard(currentSize);
+
+    botBusy = false;
+    botGameOver = false;
+
+    $("gameTitle").textContent =
+        `${currentSize}×${currentSize} · ${botDifficulty}`;
+
+    $("gameStatus").textContent =
+        `Ты — X · нужно ${currentTarget} в ряд`;
+
+    show("gameView");
+
+    renderBoard($("board"), currentBoard, currentSize, botClick);
+}
+
+$("startBot").onclick = startBot;
+$("restartBot").onclick = startBot;
+
+function botClick(i) {
+    if (botBusy || botGameOver) return;
+    if (currentBoard[i]) return;
+
+    botBusy = true;
+
+    currentBoard[i] = "X";
+
+    renderBoard($("board"), currentBoard, currentSize, botClick);
+
+    if (hasWin(currentBoard, currentSize, "X", currentTarget)) {
+        finishBot("win");
+        return;
+    }
+
+    if (currentBoard.every(Boolean)) {
+        finishBot("draw");
+        return;
+    }
+
+    $("gameStatus").textContent = "Бот думает…";
+
+    setTimeout(() => {
+        if (botGameOver) return;
+
+        const move = botPick(
+            currentBoard,
+            currentSize,
+            currentTarget,
+            botDifficulty
+        );
+
+        if (move >= 0) {
+            currentBoard[move] = "O";
+        }
+
+        renderBoard($("board"), currentBoard, currentSize, botClick);
+
+        if (hasWin(currentBoard, currentSize, "O", currentTarget)) {
+            finishBot("loss");
+            return;
+        }
+
+        if (currentBoard.every(Boolean)) {
+            finishBot("draw");
+            return;
+        }
+
+        $("gameStatus").textContent = "Твой ход";
+        botBusy = false;
+    }, 850);
+}
  if(currentBoard[i])return;
  currentBoard[i]="X";renderBoard($("board"),currentBoard,currentSize,botClick);
  if(hasWin(currentBoard,currentSize,"X",currentTarget)){finishBot("win");return}
