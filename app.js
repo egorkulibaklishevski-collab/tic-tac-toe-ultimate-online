@@ -271,20 +271,51 @@ function botClick(i) {
         botBusy = false;
     }, 850);
 }
- $("gameStatus").textContent=result==="win"?"🏆 Победа!":result==="loss"?"Бот победил!":"Ничья!";
- document.querySelectorAll("#board .cell").forEach(b=>b.disabled=true);
- if(result==="win"){
-  const key={3:"board_3",5:"board_5",10:"board_10",15:"board_15"}[currentSize];
-  unlock("first_win");unlock(key);
-  if(["Hard","Very Hard","Impossible","Mega Impossible"].includes(botDifficulty))unlock("hard_win");
- }
- if(user&&sb){
-  const field=result==="win"?"wins":result==="loss"?"losses":"draws";
-  const newValue=(profile?.[field]||0)+1;
-  const points=(profile?.points||0)+(result==="win"?10:result==="draw"?2:0);
-  const {error}=await sb.from("profiles").update({[field]:newValue,points}).eq("id",user.id);
-  if(!error)await loadProfile();
- }
+async function finishBot(result) {
+    botGameOver = true;
+
+    $("gameStatus").textContent =
+        result === "win" ? "🏆 Победа!" :
+        result === "loss" ? "Бот победил!" : "Ничья!";
+
+    document.querySelectorAll("#board .cell").forEach(b => {
+        b.disabled = true;
+    });
+
+    if (result === "win") {
+        const key = {
+            3: "board_3",
+            5: "board_5",
+            10: "board_10",
+            15: "board_15"
+        }[currentSize];
+
+        unlock("first_win");
+        unlock(key);
+
+        if (["Hard", "Very Hard", "Impossible", "Mega Impossible"].includes(botDifficulty)) {
+            unlock("hard_win");
+        }
+
+        recordGigaProgress(currentSize, botDifficulty);
+    }
+
+    if (user && sb) {
+        const field =
+            result === "win" ? "wins" :
+            result === "loss" ? "losses" : "draws";
+
+        const newValue = (profile?.[field] || 0) + 1;
+        const points = (profile?.points || 0) +
+            (result === "win" ? 10 : result === "draw" ? 2 : 0);
+
+        const { error } = await sb
+            .from("profiles")
+            .update({ [field]: newValue, points })
+            .eq("id", user.id);
+
+        if (!error) await loadProfile();
+    }
 }
 function unlock(key){if(key&&!unlocked.includes(key)){unlocked.push(key);localStorage.setItem("ttt_achievements",JSON.stringify(unlocked))}}
 function renderAchievements(){
