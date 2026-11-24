@@ -214,7 +214,6 @@ function startBot() {
         `Ты — X · нужно ${currentTarget} в ряд`;
 
     show("gameView");
-
     renderBoard($("board"), currentBoard, currentSize, botClick);
 }
 
@@ -226,7 +225,6 @@ function botClick(i) {
     if (currentBoard[i]) return;
 
     botBusy = true;
-
     currentBoard[i] = "X";
 
     renderBoard($("board"), currentBoard, currentSize, botClick);
@@ -273,14 +271,6 @@ function botClick(i) {
         botBusy = false;
     }, 850);
 }
-  if(move>=0)currentBoard[move]="O";
-  renderBoard($("board"),currentBoard,currentSize,botClick);
-  if(hasWin(currentBoard,currentSize,"O",currentTarget)){finishBot("loss");return}
-  if(currentBoard.every(Boolean)){finishBot("draw");return}
-  $("gameStatus").textContent="Твой ход";
- },850);
-}
-async function finishBot(result){
  $("gameStatus").textContent=result==="win"?"🏆 Победа!":result==="loss"?"Бот победил!":"Ничья!";
  document.querySelectorAll("#board .cell").forEach(b=>b.disabled=true);
  if(result==="win"){
