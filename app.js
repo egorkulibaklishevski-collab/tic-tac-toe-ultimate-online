@@ -273,12 +273,6 @@ function botClick(i) {
         botBusy = false;
     }, 850);
 }
- currentBoard[i]="X";renderBoard($("board"),currentBoard,currentSize,botClick);
- if(hasWin(currentBoard,currentSize,"X",currentTarget)){finishBot("win");return}
- if(currentBoard.every(Boolean)){finishBot("draw");return}
- $("gameStatus").textContent="Бот думает…";
- setTimeout(()=>{
-  const move=botPick(currentBoard,currentSize,currentTarget,botDifficulty);
   if(move>=0)currentBoard[move]="O";
   renderBoard($("board"),currentBoard,currentSize,botClick);
   if(hasWin(currentBoard,currentSize,"O",currentTarget)){finishBot("loss");return}
